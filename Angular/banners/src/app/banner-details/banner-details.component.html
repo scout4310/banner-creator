@@ -1,0 +1,17 @@
+
+<div class="container">
+
+
+  <div class="card" style="width: 18rem;" *ngIf="banner">
+    <img class="card-img-top" alt="Card image cap" [src]="endpoint + 'uploads/' + banner.image">
+    <div class="card-body">
+      <h5 class="card-title">{{banner.name}}</h5>
+      <p class="card-text">{{banner.description}}</p>
+      <a [href]="banner.url" target="_blank" class="btn btn-primary">Visit Site</a>
+    </div>
+  </div>
+
+  <div class="card" style="width: 18rem;" *ngIf="!banner">
+    <h1>Banner does not exist.</h1>
+  </div>
+</div>

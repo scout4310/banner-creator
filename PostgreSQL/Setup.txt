@@ -1,0 +1,153 @@
+
+
+CREATE DATABASE assignment_vishalYadav;
+
+
+
+
+--------------------------------------------------------------
+IMPORTANT --- Run the following commands INSIDE the "assignment_vishalYadav" database.
+
+RIght click on "assignment_vishalYadav" database -> click Query Tools -> Run following commands.
+--------------------------------------------------------------
+
+
+
+
+CREATE USER vishalYadav WITH PASSWORD 'vishalYadav';
+
+CREATE TABLE public.banners
+(
+    id SERIAL,
+    image character varying NOT NULL,
+    PRIMARY KEY (id)
+);
+
+ALTER TABLE public.banners
+    OWNER to postgres;
+
+
+
+CREATE TABLE public.locations
+(
+    id serial,
+    name character varying(30),
+    PRIMARY KEY (id)
+);
+
+ALTER TABLE public.locations
+    OWNER to postgres;
+
+
+
+
+CREATE TABLE public.details
+(
+    banner_id integer NOT NULL,
+    name character varying(30) NOT NULL,
+    desciption character varying(500) NOT NULL,
+    url character varying(255) NOT NULL,
+    location_id integer NOT NULL,
+    FOREIGN KEY (banner_id) REFERENCES banners(id),
+    FOREIGN KEY (location_id) REFERENCES locations(id)
+);
+
+ALTER TABLE public.details
+    OWNER to postgres;
+
+INSERT INTO public.locations(name) VALUES ('India');
+INSERT INTO public.locations(name) VALUES ('USA');
+INSERT INTO public.locations(name) VALUES ('Australia');
+INSERT INTO public.locations(name) VALUES ('Japan');
+INSERT INTO public.locations(name) VALUES ('France');
+
+
+--------------------------------------------------------------
+
+
+
+CREATE OR REPLACE FUNCTION public.createbanner(
+	name character varying,
+	desciption character varying,
+	location_id integer,
+	image_url character varying,
+	url character varying)
+    RETURNS json
+    LANGUAGE 'plpgsql'
+
+    COST 100
+    VOLATILE 
+    
+AS $BODY$
+DECLARE
+	id integer := -1;
+	BEGIN
+        INSERT INTO public.banners(image) VALUES (image_url) RETURNING (public.banners.id) INTO id;
+		
+		INSERT INTO public.details(banner_id, name, description, url, location_id)
+		VALUES (id, name, desciption, url, location_id);
+		
+		RETURN public."getBanners"(location_id);
+
+	END;
+$BODY$;
+
+--------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public."getBannerById"(
+	bid integer)
+    RETURNS json
+    LANGUAGE 'sql'
+
+    COST 100
+    VOLATILE 
+    
+AS $BODY$
+SELECT row_to_json(t)
+	from
+	(
+		SELECT 
+			A.id,
+			A.image,
+			B.name,
+			B.description,
+			B.location_id,
+			B.url
+		FROM public."banners" A
+		INNER JOIN public."details" B
+		ON A.id = B.banner_id
+		WHERE A.id = bid
+	) t
+$BODY$;
+
+--------------------------------------------------------
+
+
+
+CREATE OR REPLACE FUNCTION public."getBanners"(
+	loc_id integer)
+    RETURNS json
+    LANGUAGE 'sql'
+
+    COST 100
+    VOLATILE 
+    
+AS $BODY$
+SELECT array_to_json(array_agg(row_to_json(t)))
+	from
+	(
+		SELECT 
+			A.id,
+			A.image,
+			B.name,
+			B.description,
+			B.location_id,
+			B.url
+		FROM public."banners" A
+		INNER JOIN public."details" B
+		ON A.id = B.banner_id
+		WHERE B.location_id = loc_id
+	) t
+$BODY$;
+	
